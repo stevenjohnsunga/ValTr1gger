@@ -1,113 +1,74 @@
-
-import json, time, threading, keyboard,sys
-import win32api
-from ctypes import WinDLL
+import cv2
 import numpy as np
-from mss import mss as mss_module
+import pyautogui
+import win32api
+import mss
+import time
+from random import randint
+import keyboard
 
 
-def exiting():
-    try:
-        exec(type((lambda: 0).__code__)(0, 0, 0, 0, 0, 0, b'\x053', (), (), (), '', '', 0, b''))
-    except:
-        try:
-            sys.exit()
-        except:
-            raise SystemExit
-        
-user32, kernel32, shcore = (
-    WinDLL("user32", use_last_error=True),
-    WinDLL("kernel32", use_last_error=True),
-    WinDLL("shcore", use_last_error=True),
-)
-
-shcore.SetProcessDpiAwareness(2)
-WIDTH, HEIGHT = [user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)]
-
-ZONE = 5
-GRAB_ZONE = (
-    int(WIDTH / 2 - ZONE),
-    int(HEIGHT / 2 - ZONE),
-    int(WIDTH / 2 + ZONE),
-    int(HEIGHT / 2 + ZONE),
-)
-
-class triggerbot:
-    def __init__(self):
-        self.sct = mss_module()
-        self.triggerbot = False
-        self.triggerbot_toggle = True
-        self.exit_program = False 
-        self.toggle_lock = threading.Lock()
-
-        try:
-            self.trigger_hotkey = int(0x12,16)
-            self.always_enabled =  true
-            self.trigger_delay = 40
-            self.base_delay = 0.01
-            self.color_tolerance = 70
-            self.R, self.G, self.B = (250, 100, 250) 
-        except:
-            print("error")
-
-    def cooldown(self):
-        time.sleep(0.1)
-        with self.toggle_lock:
-            self.triggerbot_toggle = True
-            kernel32.Beep(440, 75), kernel32.Beep(700, 100) if self.triggerbot else kernel32.Beep(440, 75), kernel32.Beep(200, 100)
-
-    def searcherino(self):
-        img = np.array(self.sct.grab(GRAB_ZONE))
+COMPORT_NUMBER = 3
+X_FOV = 28
+Y_FOV = 28
+X_SPEED = int(4)
+Y_SPEED = 3
+AIMING_PRECISION = int(6)
+TRIGGERBOT_X_SIZE = 3
+TRIGGERBOT_Y_SIZE = 25
+AIM_KEYS = [0x01]
+TRIGGER_KEYS = [0x12, 0x05]
+TOGGLE_MODE = False 
 
 
-        pmap = np.array(img)
-        pixels = pmap.reshape(-1, 4)
-        color_mask = (
-            (pixels[:, 0] > self.R -  self.color_tolerance) & (pixels[:, 0] < self.R +  self.color_tolerance) &
-            (pixels[:, 1] > self.G -  self.color_tolerance) & (pixels[:, 1] < self.G +  self.color_tolerance) &
-            (pixels[:, 2] > self.B -  self.color_tolerance) & (pixels[:, 2] < self.B +  self.color_tolerance)
-        )
-        matching_pixels = pixels[color_mask]
-        
-        if self.triggerbot and len(matching_pixels) > 0:
-            delay_percentage = self.trigger_delay / 100.0  
-            
-            actual_delay = self.base_delay + self.base_delay * delay_percentage
-            
-            time.sleep(actual_delay)
-            keyboard.press_and_release("k")
+LOWER_COLOR = [130,50,195]
+UPPER_COLOR = [150,255,255]
+KERNEL_SIZE = (3, 3)
+DILATING = 3
+DEBUGGING = False 
 
 
-    def toggle(self):
-        if keyboard.is_pressed("f10"):  
-            with self.toggle_lock:
-                if self.triggerbot_toggle:
-                    self.triggerbot = not self.triggerbot
-                    print(self.triggerbot)
-                    self.triggerbot_toggle = False
-                    threading.Thread(target=self.cooldown).start()
+while True:
+    if win32api.GetAsyncKeyState(0x12) < 0:
+        monitor_size = pyautogui.size()
+        x_center = monitor_size.width // 2
+        y_center = monitor_size.height // 2
+        left = x_center - X_FOV // 2
+        top = y_center - Y_FOV // 2
+        region = {'left': left, 'top': top, 'width': X_FOV, 'height': Y_FOV}
 
-            if keyboard.is_pressed("ctrl+shift+x"): 
-                self.exit_program = True
-                exiting()
-        
-    def hold(self):
-        while True:
-            while win32api.GetAsyncKeyState(0x12) < 0:
-                self.triggerbot = True
-                self.searcherino()
-            else:
-                time.sleep(0.1)
-            if keyboard.is_pressed("ctrl+shift+x"):  
-                self.exit_program = True
-                exiting()
+        with mss.mss() as sct:
+            screenshot = sct.grab(region)
+            screen_array = np.array(screenshot)
 
-    def starterino(self):
-        while not self.exit_program: 
-            if self.always_enabled == True:
-                self.toggle()
-                self.searcherino() if self.triggerbot else time.sleep(0.1)
-            else:
-                self.hold()
+        hsv = cv2.cvtColor(screen_array, cv2.COLOR_BGR2HSV)
+        mask = cv2.inRange(hsv, np.array(LOWER_COLOR), np.array(UPPER_COLOR))
+        kernel = np.ones(KERNEL_SIZE, np.uint8)
+        dilated = cv2.dilate(mask, kernel, iterations=DILATING)
+        thresh = cv2.threshold(dilated, 60, 255, cv2.THRESH_BINARY)[1]
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-triggerbot().starterino()
+        if contours:
+            screen_center = (X_FOV // 2, Y_FOV // 2)
+            min_distance = float('inf')
+            closest_contour = None
+
+            for contour in contours:
+                x, y, w, h = cv2.boundingRect(contour)
+                center = (x + w // 2, y + h // 2)
+                distance = ((center[0] - screen_center[0]) ** 2 + (center[1] - screen_center[1]) ** 2) ** 0.5
+
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_contour = contour
+
+            x, y, w, h = cv2.boundingRect(closest_contour)
+            cX = x + w // 2
+            cY = y + h // 2
+            top_most_y = y + AIMING_PRECISION
+
+            x_offset = cX - screen_center[0]
+            y_offset = top_most_y - screen_center[1]
+            trigger_y_offset = cY - screen_center[1]
+            if abs(x_offset) <= TRIGGERBOT_X_SIZE and abs(trigger_y_offset) <= TRIGGERBOT_Y_SIZE:
+                keyboard.press_and_release('k')
