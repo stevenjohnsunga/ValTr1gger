@@ -48,7 +48,7 @@ class triggerbot:
             self.color_tolerance = 70
             self.R, self.G, self.B = (250, 100, 250) 
         except:
-            exiting()
+            print("error")
 
     def cooldown(self):
         time.sleep(0.1)
