@@ -27,6 +27,10 @@ KERNEL_SIZE = (3, 3)
 DILATING = 3
 DEBUGGING = False 
 
+def themagicpress():
+    keyboard.press('k')
+    keyboard.release('k')
+
 
 while True:
     if win32api.GetAsyncKeyState(0x12) < 0:
@@ -71,4 +75,4 @@ while True:
             y_offset = top_most_y - screen_center[1]
             trigger_y_offset = cY - screen_center[1]
             if abs(x_offset) <= TRIGGERBOT_X_SIZE and abs(trigger_y_offset) <= TRIGGERBOT_Y_SIZE:
-                keyboard.press_and_release('k')
+                themagicpress()
