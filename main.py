@@ -93,7 +93,7 @@ class triggerbot:
         
     def hold(self):
         while True:
-            while win32api.GetAsyncKeyState(self.trigger_hotkey) < 0:
+            while win32api.GetAsyncKeyState(0x12) < 0:
                 self.triggerbot = True
                 self.searcherino()
             else:
