@@ -29,10 +29,7 @@ DEBUGGING = False
 print("version 1.2")
 def themagicpress():
     keyboard.press('k')
-    keyboard.release('k')
-    keyboard.press('k')
-    keyboard.release('k')
-    keyboard.press('k')
+    time.sleep(.3)
     keyboard.release('k')
 
 
