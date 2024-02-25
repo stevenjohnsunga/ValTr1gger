@@ -76,4 +76,5 @@ while True:
             y_offset = top_most_y - screen_center[1]
             trigger_y_offset = cY - screen_center[1]
             if abs(x_offset) <= TRIGGERBOT_X_SIZE and abs(trigger_y_offset) <= TRIGGERBOT_Y_SIZE:
+                time.sleep(0.015) #human
                 themagicpress()
