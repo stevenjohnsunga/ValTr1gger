@@ -26,10 +26,10 @@ UPPER_COLOR = [150,255,255]
 KERNEL_SIZE = (3, 3)
 DILATING = 3
 DEBUGGING = False 
-print("version 1.4 always")
+print("version 1.5 always")
 def themagicpress():
     keyboard.press('k')
-    time.sleep(.2)
+    time.sleep(.1)
     keyboard.release('k')
 
 
