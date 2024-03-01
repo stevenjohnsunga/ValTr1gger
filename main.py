@@ -26,7 +26,7 @@ UPPER_COLOR = [150,255,255]
 KERNEL_SIZE = (3, 3)
 DILATING = 3
 DEBUGGING = False 
-print("version 1.3")
+print("version 1.4 always")
 def themagicpress():
     keyboard.press('k')
     time.sleep(.2)
@@ -34,7 +34,7 @@ def themagicpress():
 
 
 while True:
-    if win32api.GetAsyncKeyState(0x12) < 0:
+    if (True):
         monitor_size = pyautogui.size()
         x_center = monitor_size.width // 2
         y_center = monitor_size.height // 2
